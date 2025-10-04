@@ -2,6 +2,7 @@
 backend/venv/
 __pycache__/
 *.pyc
+backend/*.db 
 
 # Node / React
 frontend/node_modules/
