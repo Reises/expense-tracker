@@ -61,7 +61,7 @@ async def get_expense_by_id(db_session: AsyncSession,
     """
     print("=== １件取得：開始 ===")
     result = await db_session.execute(
-    select(expense_model.Expense).where(expense_model.Expense.id == expense_id))
+    select(expense_model.Expense).where(expense_model.Expense.expense_id == expense_id))
     expense = result.scalars().first()
     print(">>> データ取得完了")
     return expense

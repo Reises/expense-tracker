@@ -1,4 +1,4 @@
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import { Container, Typography, Box, Stack } from "@mui/material";
 import TransactionForm from './components/TransactionForm.jsx'
 import TransactionList from "./components/TransactionList.jsx";
@@ -46,6 +46,8 @@ dayjs.locale('ja');
 // タイムゾーンのデフォルトをJST化
 dayjs.tz.setDefault('Asia/Tokyo');
 
+const url = 'http://localhost:8000/expenses/'
+
 // 月ごとの集計
 function getMonthlyTotal(transactions, year, month) {
   return transactions
@@ -69,20 +71,55 @@ function App() {
   const [transactions, setTransactions] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
 
-  const handleAddTransaction = ({amount, type, date, category}) => {
+  const handleAddTransaction = async ({amount, type, date, category}) => {
     const adjustedAmount = type === "expense" ? -amount : amount
     //  登録処理
-    setTransactions([
-      ...transactions,
-      {id: `${date}-${Date.now()}`, amount: adjustedAmount, date: dayjs(date).tz("Asia/Tokyo").format("YYYY-MM-DD"), type, category}
-    ]);
       setTotalAmount(prevAmount => prevAmount + adjustedAmount)
+      try {
+          const response = await fetch(url, {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                  amount: amount,
+                  category: category,
+                  date: dayjs(date),
+                  type: type,
+              })
+          });
+          const created = await response.json(); // ここでDBから返ってきた値を取る
+          setTransactions((prev) => [
+              ...prev,
+              {
+                  id: created.expense_id,
+                  amount: created.amount,
+                  date: created.date,
+                  type: created.type,
+                  category: created.category,
+              },
+          ]);
+      } catch (e) {
+          console.error(e)
+      }
   }
 
   //  削除処理
-  const handleRemoveTransaction = (id, removeAmount) => {
+  const handleRemoveTransaction = async (id, removeAmount) => {
     setTransactions(transactions.filter((item) => item.id !== id));
     setTotalAmount(prevAmount => prevAmount - removeAmount)
+      try {
+          const response = await fetch(`${url}${id}`, {
+              method: "DELETE",
+              headers: {
+                  "Content-Type": "application/json",
+              },
+              body: JSON.stringify(id)
+          });
+          console.log('正常に送信しました', response);
+      } catch (e) {
+          console.error(e)
+      }
   }
 
   //  グラフ用にオブジェクトを配列に変換
@@ -92,6 +129,28 @@ function App() {
       value: amount
     })
   );
+
+
+    const fetchExpensiveList = async () => {
+        const response = await fetch(url);
+        const data = await response.json();
+        const expensiveList = data.map((item) => ({
+            id: item.expense_id,
+            amount: item.amount,
+            date: dayjs(item.date).tz("Asia/Tokyo").format("YYYY-MM-DD"),
+            type: item.type,
+            category: item.category
+        }));
+        // 合計をreduceで計算
+        const total = data.reduce((sum, item) => sum + item.amount, 0);
+        // 一度だけsetする
+        setTotalAmount(total);
+        setTransactions(expensiveList);
+    };
+    // FastAPIからデータ取得
+    useEffect(() => {
+        fetchExpensiveList();
+    }, []);
 
   return (
     <>

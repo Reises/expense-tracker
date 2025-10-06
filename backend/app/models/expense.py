@@ -9,9 +9,8 @@ from datetime import datetime
 class Expense(Base):
     # テーブル名
     __tablename__ = "expense"
-    id = Column(Integer, primary_key=True, autoincrement=True)  # 新規ID
-    # id(日付)
-    expense_id = Column(DateTime, default=datetime.now())
+    # id
+    expense_id = Column(Integer, primary_key=True, autoincrement=True)
     # 金額(未入力不可)
     amount = Column(Integer, nullable=False)
     # 日付

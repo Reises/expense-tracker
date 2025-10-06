@@ -11,13 +11,13 @@ router = APIRouter(tags=["expenses"], prefix="/expenses")
 # メモ用のエンドポイント
 # ==================================================
 # メモ新規登録のエンドポイント
-@router.post("/", response_model=ResponseSchema)
+@router.post("/", response_model=ExpenseSchema)
 async def create_expense(expense: InsertAndUpdateExpenseSchema,
                     db: AsyncSession = Depends(db.get_dbsession)):
     try:
         # 新しいメモをデータベースに登録
-        await expense_crud.insert_expense(db, expense)
-        return ResponseSchema(message="メモが正常に登録されました")
+        created = await expense_crud.insert_expense(db, expense)
+        return created #登録内容を返す
     except Exception as e:
         # 登録に失敗した場合、HTTP 400エラーを返す
         raise HTTPException(status_code=400, detail="メモの登録に失敗しました。")

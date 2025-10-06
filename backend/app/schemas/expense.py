@@ -10,17 +10,22 @@ class InsertAndUpdateExpenseSchema(BaseModel):
     amount: int = Field(...,
             description="金額を入力してください。少なくとも1円以上必要です。",
             example=1)
-    # メモの詳細説明。このフィールドは任意で入力可能です。
-    # description: str = Field(default="",
-    #         description="メモの内容についての追加情報。任意で記入できます。",
-    #         example="会議で話すトピック：プロジェクトの進捗状況")
+    date: datetime = Field(...,
+            description="日付を入力してください。",
+            example="YYYY/MM/DD")
+    type: str = Field(...,
+            description="収支を選択してください。",
+            example="expense")
+    category: str = Field(...,
+            description="カテゴリを選択してください。",
+            example="その他")
 
-# メモ情報を表すスキーマ
+# 収支情報を表すスキーマ
 class ExpenseSchema(InsertAndUpdateExpenseSchema):
-    # メモの一意識別子。データベースでユニークな主キーとして使用されます。
-    expense_id: datetime = Field(...,
+    # 収支の一意識別子。データベースでユニークな主キーとして使用されます。
+    expense_id: int = Field(...,
             description="収支を一意に識別するID番号。",
-            example=datetime.now())
+            example=123)
 
 # レスポンスで使用する結果用スキーマ
 class ResponseSchema(BaseModel):
