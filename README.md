@@ -1,6 +1,7 @@
 # 収支トラッカーアプリ
 収支を記録できるウェブアプリケーションです。<br>
-フロントエンドはReact+JavaScript
+フロントエンドはReact+JavaScript<br>
+バックエンドはFastAPI
 
 # 機能概要
 * 収入、支出の切り替え
@@ -15,6 +16,7 @@
 
 # アーキテクチャ
 * フロントエンド：React + JavaScript + Vite
+* バックエンド：FastAPI
 
 # 技術スタック
 
@@ -27,5 +29,5 @@
 
 
 **バックエンド**
-<br>
-FastAPIでの開発予定(2025/8/24現在学習中)
+* FastAPI
+* Sqlite
