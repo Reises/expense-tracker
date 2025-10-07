@@ -105,9 +105,10 @@ function App() {
   }
 
   //  削除処理
-  const handleRemoveTransaction = async (id, removeAmount) => {
+  const handleRemoveTransaction = async (id, removeAmount, type) => {
+      const adjustedAmount = type === "expense" ? -removeAmount : removeAmount
     setTransactions(transactions.filter((item) => item.id !== id));
-    setTotalAmount(prevAmount => prevAmount - removeAmount)
+    setTotalAmount(prevAmount => prevAmount - adjustedAmount)
       try {
           const response = await fetch(`${url}${id}`, {
               method: "DELETE",
