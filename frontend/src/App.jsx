@@ -1,196 +1,184 @@
-import {useEffect, useState} from "react";
-import { Container, Typography, Box, Stack } from "@mui/material";
-import TransactionForm from './components/TransactionForm.jsx'
+import { useEffect, useState } from "react";
+import {
+    Container,
+    Typography,
+    Box,
+    Paper,
+    Divider,
+    Stack,
+} from "@mui/material";
+import TransactionForm from "./components/TransactionForm.jsx";
 import TransactionList from "./components/TransactionList.jsx";
-import { PieChart, Pie, Sector, Cell, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import dayjs from "dayjs";
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
 
-// rechartsの処理
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
-const RADIAN = Math.PI / 180;
-const customizedLabel = ({
-  cx,
-  cy,
-  midAngle,
-  innerRadius,
-  outerRadius,
-  percent,
-}) => {
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-  return (
-    <text
-      x = {x}
-      y = {y}
-      fill="white"
-      textAnchor={x > cx ? "start" : "middle"}
-      dominantBaseline="central"
-      fontSize={16}
-    >
-      {`${(percent * 100).toFixed(0)}%`}
-    </text>
-  )
-}
-
-// dayjsの処理
-// UTCプラグインを読み込み
 dayjs.extend(utc);
-// timezoneプラグインを読み込み
 dayjs.extend(timezone);
-// 日本語化
-dayjs.locale('ja');
-// タイムゾーンのデフォルトをJST化
-dayjs.tz.setDefault('Asia/Tokyo');
+dayjs.locale("ja");
+dayjs.tz.setDefault("Asia/Tokyo");
 
-const url = 'http://localhost:8000/expenses/'
+const COLORS = ["#1976d2", "#4caf50", "#ffb300", "#e53935"];
+const url = "http://localhost:8000/expenses/";
 
-// 月ごとの集計
-function getMonthlyTotal(transactions, year, month) {
-  return transactions
-    .filter(tran => {
-      const date = new Date(tran.date);
-      return date.getFullYear() === year && date.getMonth() + 1 === month;
-    })
-    .reduce((sum, tran) => sum + tran.amount, 0); //  1行アロー関数なのでreturn省略
-}
-
-//  カテゴリ集計
 function getCategoryTotal(transactions) {
-  return transactions.reduce((acc, tran) => {
-    if (!acc[tran.category]) acc[tran.category] = 0;  //  accオブジェクトにはtran.categoryがないので作成して値を0入れておく例{交通費:0}
-    acc[tran.category] += tran.amount;
-    return acc;
-  }, {});
+    return transactions.reduce((acc, tran) => {
+        if (!acc[tran.category]) acc[tran.category] = 0;
+        acc[tran.category] += tran.amount;
+        return acc;
+    }, {});
 }
 
-function App() {
-  const [transactions, setTransactions] = useState([]);
-  const [totalAmount, setTotalAmount] = useState(0);
+export default function App() {
+    const [transactions, setTransactions] = useState([]);
+    const [totalAmount, setTotalAmount] = useState(0);
 
-  const handleAddTransaction = async ({amount, type, date, category}) => {
-    const adjustedAmount = type === "expense" ? -amount : amount
-    //  登録処理
-      setTotalAmount(prevAmount => prevAmount + adjustedAmount)
-      try {
-          const response = await fetch(url, {
-              method: "POST",
-              headers: {
-                  "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                  amount: amount,
-                  category: category,
-                  date: dayjs(date),
-                  type: type,
-              })
-          });
-          const created = await response.json(); // ここでDBから返ってきた値を取る
-          setTransactions((prev) => [
-              ...prev,
-              {
-                  id: created.expense_id,
-                  amount: created.amount,
-                  date: created.date,
-                  type: created.type,
-                  category: created.category,
-              },
-          ]);
-      } catch (e) {
-          console.error(e)
-      }
-  }
+    const handleAddTransaction = async ({ amount, type, date, category }) => {
+        const adjustedAmount = type === "expense" ? -amount : amount;
+        setTotalAmount((prevAmount) => prevAmount + adjustedAmount);
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    amount,
+                    category,
+                    date: dayjs(date),
+                    type,
+                }),
+            });
+            const created = await response.json();
+            setTransactions((prev) => [
+                ...prev,
+                {
+                    id: created.expense_id,
+                    amount: created.amount,
+                    date: created.date,
+                    type: created.type,
+                    category: created.category,
+                },
+            ]);
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
-  //  削除処理
-  const handleRemoveTransaction = async (id, removeAmount, type) => {
-      const adjustedAmount = type === "expense" ? -removeAmount : removeAmount
-    setTransactions(transactions.filter((item) => item.id !== id));
-    setTotalAmount(prevAmount => prevAmount - adjustedAmount)
-      try {
-          const response = await fetch(`${url}${id}`, {
-              method: "DELETE",
-              headers: {
-                  "Content-Type": "application/json",
-              },
-              body: JSON.stringify(id)
-          });
-          console.log('正常に送信しました', response);
-      } catch (e) {
-          console.error(e)
-      }
-  }
+    const handleRemoveTransaction = async (id, removeAmount, type) => {
+        const adjustedAmount = type === "expense" ? -removeAmount : removeAmount;
+        setTransactions(transactions.filter((item) => item.id !== id));
+        setTotalAmount((prevAmount) => prevAmount - adjustedAmount);
+        try {
+            await fetch(`${url}${id}`, { method: "DELETE" });
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
-  //  グラフ用にオブジェクトを配列に変換
-  const categoryData = Object.entries(getCategoryTotal(transactions)).map(
-    ([category, amount]) => ({
-      name: category,
-      value: amount
-    })
-  );
-
+    const categoryData = Object.entries(getCategoryTotal(transactions)).map(
+        ([category, amount]) => ({
+            name: category,
+            value: amount,
+        })
+    );
 
     const fetchExpensiveList = async () => {
         const response = await fetch(url);
         const data = await response.json();
-        const expensiveList = data.map((item) => ({
+        const list = data.map((item) => ({
             id: item.expense_id,
             amount: item.amount,
             date: dayjs(item.date).tz("Asia/Tokyo").format("YYYY-MM-DD"),
             type: item.type,
-            category: item.category
+            category: item.category,
         }));
-        // 合計をreduceで計算
         const total = data.reduce((sum, item) => sum + item.amount, 0);
-        // 一度だけsetする
         setTotalAmount(total);
-        setTransactions(expensiveList);
+        setTransactions(list);
     };
-    // FastAPIからデータ取得
+
     useEffect(() => {
         fetchExpensiveList();
     }, []);
 
-  return (
-    <>
-    <Container maxWidth="sm">
-      <Typography variant="h4" component="h4" gutterBottom>
-        収支トラッカー
-      </Typography>
-      <Stack spacing={2}>
-      <Box><Typography variant="h5">残高: ¥{totalAmount}</Typography></Box>
-      <TransactionForm onAdd={handleAddTransaction} />
-      <TransactionList items={transactions} onRemove={handleRemoveTransaction} setItems={setTransactions} />
-      </Stack>
-    </Container>
+    return (
+        <Box sx={{ backgroundColor: "#f9fafb", minHeight: "100vh", py: 6 }}>
+            <Container maxWidth="md">
+                {/* タイトル */}
+                <Box sx={{ textAlign: "center", mb: 6 }}>
+                    <Typography
+                        variant="h3"
+                        fontWeight={600}
+                        gutterBottom
+                        sx={{ color: "#1976d2" }}
+                    >
+                        収支トラッカー
+                    </Typography>
+                    <Typography variant="h6" color="text.secondary">
+                        現在の残高:{" "}
+                        <Typography
+                            component="span"
+                            color="success.main"
+                            fontWeight={700}
+                            sx={{ fontSize: "1.25rem" }}
+                        >
+                            ¥{totalAmount.toLocaleString()}
+                        </Typography>
+                    </Typography>
+                </Box>
 
-     <ResponsiveContainer width="100%" height={500}>
-        <PieChart width={500} height={500}>
-          <Pie
-            data={categoryData}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            outerRadius={100}
-            fill="#8884d8"
-            label={customizedLabel}
-            labelLine={false}
-            isAnimationActive={false}
-          >
-            {categoryData.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
-              />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
-      </>
-  );
+                {/* フォーム */}
+                <Paper elevation={3} sx={{ p: 4, borderRadius: 3, mb: 4 }}>
+                    <Typography variant="h6" gutterBottom>
+                        新しい取引を追加
+                    </Typography>
+                    <Divider sx={{ mb: 3 }} />
+                    <TransactionForm onAdd={handleAddTransaction} />
+                </Paper>
+
+                {/* リスト */}
+                <Paper elevation={3} sx={{ p: 4, borderRadius: 3, mb: 4 }}>
+                    <Typography variant="h6" gutterBottom>
+                        取引リスト
+                    </Typography>
+                    <Divider sx={{ mb: 3 }} />
+                    <TransactionList
+                        items={transactions}
+                        onRemove={handleRemoveTransaction}
+                        setItems={setTransactions}
+                    />
+                </Paper>
+
+                {/* 円グラフ */}
+                <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                        カテゴリ別割合
+                    </Typography>
+                    <Divider sx={{ mb: 3 }} />
+                    <Box sx={{ height: 300 }}>
+                        <ResponsiveContainer>
+                            <PieChart>
+                                <Pie
+                                    data={categoryData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={100}
+                                    label
+                                >
+                                    {categoryData.map((entry, index) => (
+                                        <Cell
+                                            key={index}
+                                            fill={COLORS[index % COLORS.length]}
+                                        />
+                                    ))}
+                                </Pie>
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </Box>
+                </Paper>
+            </Container>
+        </Box>
+    );
 }
-
-export default App;
